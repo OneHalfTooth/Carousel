@@ -1,0 +1,6 @@
+framework module Pods_LoopRunImageUITests {
+  umbrella header "Pods-LoopRunImageUITests-umbrella.h"
+
+  export *
+  module * { export * }
+}
