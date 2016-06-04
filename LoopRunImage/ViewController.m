@@ -24,6 +24,14 @@
     [scrollView upDataScrollViewImageArray:arr PlaceholderImage:[UIImage imageNamed:@"msy"]];
     
 }
+-(void)viewWillAppear:(BOOL)animated{
+    NSLog(@"出现了");
+    NSLog(@"%d",animated);
+}
+-(void)viewDidDisappear:(BOOL)animated{
+    NSLog(@"消失了");
+    NSLog(@"%d",animated);
+}
 
 #pragma mark -- MMBackScrollViewDelegate
 -(CGFloat)scrollToNextImageTimeInterval:(MMBackScrollView *)backScrollView{
@@ -65,6 +73,9 @@
 - (void)didReceiveMemoryWarning {
     [super didReceiveMemoryWarning];
     // Dispose of any resources that can be recreated.
+}
+-(void)dealloc{
+    NSLog(@"销毁了");
 }
 
 @end

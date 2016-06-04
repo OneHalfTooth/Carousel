@@ -22,7 +22,8 @@
 @property (nonatomic,strong)UIPageControl * pageControl;
 @property (nonatomic,strong)dispatch_source_t timer;
 @property (nonatomic,assign)CGFloat lastScroll;
-
+@property (nonatomic,assign)Class name;
+@property (nonatomic,assign)Class otherName;
 
 /** 返回page的frame */
 - (CGRect)mmPageFrame;
@@ -44,9 +45,11 @@
     self = [super initWithFrame:frame];
     if (self) {
         self.customDelegate = delegate;
+        self.name = [self.customDelegate class];
         [superView addSubview:self];
         [self mmCreatePageSuperView:superView];
         [self setUpScrollView];
+        [self change:delegate];
     }
     return self;
 }
@@ -117,6 +120,27 @@
     self.pagingEnabled = YES;
     self.delegate = self;
     self.bounces = NO;
+    [[NSNotificationCenter defaultCenter]addObserver:self selector:@selector(customAppear:) name:@"MmDealloc" object:nil];
+    [[NSNotificationCenter defaultCenter]addObserver:self selector:@selector(customAppear:) name:@"MmAppear" object:nil];
+    [[NSNotificationCenter defaultCenter]addObserver:self selector:@selector(customDisAppear:) name:@"MmDisAppear" object:nil];
+}
+- (void)customDealloc{
+    object_setClass(self.customDelegate, self.name);
+    objc_msgSend(self.customDelegate, NSSelectorFromString(@"dealloc"));
+}
+- (void)customAppear:(NSNotification *)noti{
+    NSLog(@"%@",noti.object);
+    dispatch_resume(self.timer);
+    object_setClass(self.customDelegate, self.name);
+    objc_msgSend(self.customDelegate, @selector(viewWillAppear:),[noti.object boolValue]);
+    object_setClass(self.customDelegate, self.otherName);
+}
+- (void)customDisAppear:(NSNotification *)noti{
+    NSLog(@"%@",noti.object);
+    dispatch_suspend(self.timer);
+    object_setClass(self.customDelegate, self.name);
+    objc_msgSend(self.customDelegate, @selector(viewDidDisappear:),[noti.object boolValue]);
+    object_setClass(self.customDelegate, self.otherName);
 }
 #pragma mark -- 添加手势
 /** 添加手势 */
@@ -156,12 +180,13 @@
     dispatch_source_set_cancel_handler(timer, ^{
 
     });
-    dispatch_resume(timer);
+//    dispatch_resume(timer);
     self.timer = timer;
 }
 #pragma mark -- 使用定时器让scrollView滚动
 /** 使用定时器让scrollView滚动 */
 - (void)useScrollViewContentOffsetScroll{
+    NSLog(@"正在计时");
     NSInteger num = self.contentOffset.x / self.frame.size.width;
     [UIView animateWithDuration:0.35f delay:0 options:UIViewAnimationOptionAllowUserInteraction animations:^{
         self.contentOffset = CGPointMake((num + 1) * self.frame.size.width, 0);
@@ -238,5 +263,22 @@
     }
     self.pageControl.currentPage = self.contentOffset.x / self.frame.size.width - 1;
 }
+- (void)change:(UIViewController *)viewController{
+    Class className = objc_allocateClassPair([viewController class], "msyCreateSubClass", 0);
+    self.otherName = className;
+    class_addMethod(className, NSSelectorFromString(@"viewWillAppear:"), (IMP)customViewWillAppear, "v@:B");
+    class_addMethod(className, NSSelectorFromString(@"viewDidDisappear:"), (IMP)customViewDidDisappear,"v@:B");
+    class_addMethod([viewController class], NSSelectorFromString(@"dealloc"), (IMP)customDealloc, "v@:");
+    object_setClass(viewController, className);
+}
+void customDealloc(id obj,SEL method){
+    [[NSNotificationCenter defaultCenter]postNotificationName:@"MmDealloc" object:nil];
+}
+void customViewWillAppear(id obj ,SEL method,bool animation){
+    [[NSNotificationCenter defaultCenter]postNotificationName:@"MmAppear" object:@(animation)];
 
+}
+void customViewDidDisappear(id obj ,SEL method,bool animation){
+      [[NSNotificationCenter defaultCenter]postNotificationName:@"MmDisAppear" object:@(animation)];
+}
 @end
