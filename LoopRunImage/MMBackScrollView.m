@@ -23,7 +23,8 @@ typedef enum{
 @property (nonatomic,weak)id<MMBackScrollViewDelegate> customDelegate;
 /** 页码 */
 @property (nonatomic,strong)UIPageControl * pageControl;
-@property (nonatomic,assign)dispatch_source_t timer;
+@property (nonatomic,strong)dispatch_source_t timer;
+@property (nonatomic,strong)dispatch_source_t timerTimer;
 @property (nonatomic,assign)CGFloat lastScroll;
 
 
@@ -40,7 +41,6 @@ typedef enum{
 @implementation MMBackScrollView
 
 -(instancetype)initWithFrame:(CGRect)frame AndSuperView:(UIView *)superView Delegate:(id <MMBackScrollViewDelegate>)delegate{
-
     self = [super initWithFrame:frame];
     if (self) {
         self.customDelegate = delegate;
@@ -61,6 +61,7 @@ typedef enum{
     [self createImageViewByImageArray:imageArray PlaceholderImage:placeholderImage];
     /** 计时器开始 */
     [self mmSetTimer];
+    
 }
 #pragma mark -- 创建页码
 /** 创建页码 */
@@ -136,17 +137,23 @@ typedef enum{
         }
     });
     dispatch_source_set_cancel_handler(timer, ^{
-        NSLog(@"cancel");
+
     });
-    
     dispatch_resume(timer);
     self.timer = timer;
 }
 #pragma mark -- 使用定时器让scrollView滚动
 /** 使用定时器让scrollView滚动 */
 - (void)useScrollViewContentOffsetScroll{
-
-    NSLog(@"sdfad");
+    NSInteger num = self.contentOffset.x / self.frame.size.width;
+    [UIView animateWithDuration:0.35f delay:0 options:UIViewAnimationOptionAllowUserInteraction animations:^{
+        self.contentOffset = CGPointMake((num + 1) * self.frame.size.width, 0);
+    } completion:^(BOOL finished) {
+        if (num == self.pageControl.numberOfPages) {
+            self.contentOffset = CGPointMake(self.frame.size.width, 0);
+        }
+        NSLog(@"%lf",self.contentOffset.x);
+    }];
 }
 
 #pragma mark -- 获取用户指定的信息
@@ -181,14 +188,12 @@ typedef enum{
 #pragma mark -- scrollDelegate
 -(void)scrollViewWillBeginDragging:(UIScrollView *)scrollView{
     dispatch_source_set_timer(self.timer, DISPATCH_TIME_FOREVER, [self.customDelegate scrollToNextImageTimeInterval] * NSEC_PER_SEC, 0);
+
 }
 -(void)scrollViewDidEndDragging:(UIScrollView *)scrollView willDecelerate:(BOOL)decelerate{
-    dispatch_source_set_timer(self.timer, DISPATCH_TIME_NOW, [self.customDelegate scrollToNextImageTimeInterval] * NSEC_PER_SEC, 0);
-
+    dispatch_source_set_timer(self.timer, dispatch_walltime(DISPATCH_TIME_NOW, [self.customDelegate scrollToNextImageTimeInterval] * NSEC_PER_SEC), [self.customDelegate scrollToNextImageTimeInterval] * NSEC_PER_SEC, 0);
 }
-
--(void)scrollViewDidScroll:(UIScrollView *)scrollView{
-
+- (void)scrollViewDidEndDecelerating:(UIScrollView *)scrollView{
+    
 }
-
 @end
