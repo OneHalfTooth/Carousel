@@ -34,8 +34,8 @@
 - (NSInteger)setMMBackScrollViewCurrentPageNumber:(MMBackScrollView *)backScrollView;
 /**用户拖拽之后滚动动画暂停，等待timeInterval 秒后继续开始滚动动画*/
 - (CGFloat)setMMBackScrollViewDranggingStartScrollTimeInterval:(MMBackScrollView *)backScrollView;
-/** 页码按钮是否可以被点击 */
-- (BOOL)setPageControlEnableMMBackScrollView:(MMBackScrollView *)backScrollView;
+/** 设置轮播图，动画的时间间隔 */
+- (NSTimeInterval)setMMBackScrollViewAnimationTimeIntervalBackScrollView:(MMBackScrollView *)backScrollView;
 @end
 
 

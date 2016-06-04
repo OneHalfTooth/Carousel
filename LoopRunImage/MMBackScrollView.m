@@ -24,6 +24,8 @@
 @property (nonatomic,assign)CGFloat lastScroll;
 @property (nonatomic,assign)Class name;
 @property (nonatomic,assign)Class otherName;
+/** 是否挂起 */
+@property (nonatomic,assign)BOOL flag;
 
 /** 返回page的frame */
 - (CGRect)mmPageFrame;
@@ -37,6 +39,8 @@
 - (CGFloat)mmSetDranggingStartScrollTimeInterval;
 /** 页码按钮是不是可以被点击 */
 - (BOOL)mmSetPageEnabled;
+/** 滚动动画的时间 */
+- (NSTimeInterval)mmSetAnimationTimeinterval;
 
 @end
 @implementation MMBackScrollView
@@ -125,19 +129,29 @@
     [[NSNotificationCenter defaultCenter]addObserver:self selector:@selector(customDisAppear:) name:@"MmDisAppear" object:nil];
 }
 - (void)customDealloc{
+    if (!self.flag) {
+        dispatch_resume(self.timer);
+        dispatch_source_cancel(self.timer);
+    }
+    dispatch_source_cancel(self.timer);
+    NSLog(@"%@",self.timer);
     object_setClass(self.customDelegate, self.name);
     objc_msgSend(self.customDelegate, NSSelectorFromString(@"dealloc"));
 }
 - (void)customAppear:(NSNotification *)noti{
-    NSLog(@"%@",noti.object);
-    dispatch_resume(self.timer);
+    if (!self.flag) {
+        self.flag = YES;
+        dispatch_resume(self.timer);
+    }
     object_setClass(self.customDelegate, self.name);
     objc_msgSend(self.customDelegate, @selector(viewWillAppear:),[noti.object boolValue]);
     object_setClass(self.customDelegate, self.otherName);
 }
 - (void)customDisAppear:(NSNotification *)noti{
-    NSLog(@"%@",noti.object);
-    dispatch_suspend(self.timer);
+    if (self.flag) {
+        self.flag = NO;
+//        dispatch_suspend(self.timer);
+    }
     object_setClass(self.customDelegate, self.name);
     objc_msgSend(self.customDelegate, @selector(viewDidDisappear:),[noti.object boolValue]);
     object_setClass(self.customDelegate, self.otherName);
@@ -162,7 +176,6 @@
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.4 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
         dispatch_resume(self.timer);
     });
-    NSLog(@"%ld",pageControl.currentPage);
     [self setContentOffset:CGPointMake(pageControl.currentPage * self.frame.size.width, 0) animated:YES];
 }
 #pragma mark -- 设置及时器
@@ -186,9 +199,8 @@
 #pragma mark -- 使用定时器让scrollView滚动
 /** 使用定时器让scrollView滚动 */
 - (void)useScrollViewContentOffsetScroll{
-    NSLog(@"正在计时");
     NSInteger num = self.contentOffset.x / self.frame.size.width;
-    [UIView animateWithDuration:0.35f delay:0 options:UIViewAnimationOptionAllowUserInteraction animations:^{
+    [UIView animateWithDuration:self.mmSetAnimationTimeinterval delay:0 options:UIViewAnimationOptionAllowUserInteraction animations:^{
         self.contentOffset = CGPointMake((num + 1) * self.frame.size.width, 0);
     } completion:^(BOOL finished) {
         if (num == self.pageControl.numberOfPages) {
@@ -236,10 +248,14 @@
 }
 /** 页码按钮是不是可以被点击 */
 - (BOOL)mmSetPageEnabled{
-    if ([self.customDelegate respondsToSelector:@selector(setPageControlEnableMMBackScrollView:)]) {
-        return [self.customDelegate setPageControlEnableMMBackScrollView:self];
+       return NO;
+}
+/** 滚动动画的时间 */
+- (NSTimeInterval)mmSetAnimationTimeinterval{
+    if ([self.customDelegate respondsToSelector:@selector(setMMBackScrollViewAnimationTimeIntervalBackScrollView:)]) {
+        [self.customDelegate setMMBackScrollViewAnimationTimeIntervalBackScrollView:self];
     }
-    return NO;
+    return 0.35f;
 }
 #pragma mark -- scrollDelegate
 -(void)scrollViewWillBeginDragging:(UIScrollView *)scrollView{
@@ -276,7 +292,6 @@ void customDealloc(id obj,SEL method){
 }
 void customViewWillAppear(id obj ,SEL method,bool animation){
     [[NSNotificationCenter defaultCenter]postNotificationName:@"MmAppear" object:@(animation)];
-
 }
 void customViewDidDisappear(id obj ,SEL method,bool animation){
       [[NSNotificationCenter defaultCenter]postNotificationName:@"MmDisAppear" object:@(animation)];
