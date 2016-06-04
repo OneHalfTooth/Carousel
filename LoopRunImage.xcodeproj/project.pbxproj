@@ -28,6 +28,7 @@
 		102333551CFFD0ED0010ABF2 /* MMBackScrollView.m in Sources */ = {isa = PBXBuildFile; fileRef = 102333531CFFD0ED0010ABF2 /* MMBackScrollView.m */; };
 		102333561CFFD0ED0010ABF2 /* MMBackScrollView.m in Sources */ = {isa = PBXBuildFile; fileRef = 102333531CFFD0ED0010ABF2 /* MMBackScrollView.m */; };
 		102333B01D0123770010ABF2 /* msy.png in Resources */ = {isa = PBXBuildFile; fileRef = 102333AF1D0123770010ABF2 /* msy.png */; };
+		10841ACE1D02CCE3002DF8EB /* PushViewContr0llerViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 10841ACD1D02CCE3002DF8EB /* PushViewContr0llerViewController.m */; };
 		41E95AE5399BD08B03D515E7 /* Pods_LoopRunImage.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7C4343F66E229B328DA66554 /* Pods_LoopRunImage.framework */; };
 		50BFAC3D9FFF354BD925D9E8 /* Pods_LoopRunImageUITests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 19342E3B555CC8E090CC3841 /* Pods_LoopRunImageUITests.framework */; };
 		E0C146DFF3FB931C3ECBC4E9 /* Pods_LoopRunImageTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B5EEEC1DB8D483A2E43900E0 /* Pods_LoopRunImageTests.framework */; };
@@ -73,6 +74,8 @@
 		102333521CFFD0ED0010ABF2 /* MMBackScrollView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MMBackScrollView.h; sourceTree = "<group>"; };
 		102333531CFFD0ED0010ABF2 /* MMBackScrollView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MMBackScrollView.m; sourceTree = "<group>"; };
 		102333AF1D0123770010ABF2 /* msy.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = msy.png; sourceTree = "<group>"; };
+		10841ACC1D02CCE3002DF8EB /* PushViewContr0llerViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PushViewContr0llerViewController.h; sourceTree = "<group>"; };
+		10841ACD1D02CCE3002DF8EB /* PushViewContr0llerViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PushViewContr0llerViewController.m; sourceTree = "<group>"; };
 		163FE01B85EC15163625AD16 /* Pods-LoopRunImageTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-LoopRunImageTests.release.xcconfig"; path = "Pods/Target Support Files/Pods-LoopRunImageTests/Pods-LoopRunImageTests.release.xcconfig"; sourceTree = "<group>"; };
 		19342E3B555CC8E090CC3841 /* Pods_LoopRunImageUITests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_LoopRunImageUITests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		1B8144A9C1613074865F8BCF /* Pods-LoopRunImage.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-LoopRunImage.release.xcconfig"; path = "Pods/Target Support Files/Pods-LoopRunImage/Pods-LoopRunImage.release.xcconfig"; sourceTree = "<group>"; };
@@ -143,6 +146,8 @@
 				102333111CFFD0060010ABF2 /* AppDelegate.m */,
 				102333131CFFD0060010ABF2 /* ViewController.h */,
 				102333141CFFD0060010ABF2 /* ViewController.m */,
+				10841ACC1D02CCE3002DF8EB /* PushViewContr0llerViewController.h */,
+				10841ACD1D02CCE3002DF8EB /* PushViewContr0llerViewController.m */,
 				102333161CFFD0060010ABF2 /* Main.storyboard */,
 				102333191CFFD0060010ABF2 /* Assets.xcassets */,
 				1023331B1CFFD0060010ABF2 /* LaunchScreen.storyboard */,
@@ -497,6 +502,7 @@
 				102333121CFFD0060010ABF2 /* AppDelegate.m in Sources */,
 				102333541CFFD0ED0010ABF2 /* MMBackScrollView.m in Sources */,
 				1023330F1CFFD0060010ABF2 /* main.m in Sources */,
+				10841ACE1D02CCE3002DF8EB /* PushViewContr0llerViewController.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

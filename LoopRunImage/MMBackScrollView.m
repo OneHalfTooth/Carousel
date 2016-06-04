@@ -13,10 +13,7 @@
 #import "UIImageView+WebCache.h"
 
 
-typedef enum{
-    ImageViewCreateByUrl = 0,/** 通过图片url创建imageView */
-    ImageViewCreateByImage,/** 通过图片创建ImageView */
-}ImageViewCreateType;
+
 @interface MMBackScrollView ()<UIScrollViewDelegate>
 
 /** 代理 */
@@ -24,7 +21,6 @@ typedef enum{
 /** 页码 */
 @property (nonatomic,strong)UIPageControl * pageControl;
 @property (nonatomic,strong)dispatch_source_t timer;
-@property (nonatomic,strong)dispatch_source_t timerTimer;
 @property (nonatomic,assign)CGFloat lastScroll;
 
 
@@ -36,11 +32,15 @@ typedef enum{
 - (UIColor *)mmPageIndicatorTintColor;
 /** 设置默认页数 */
 - (NSInteger)mmSetCurrentPageNumber;
+/** 用户拖拽事件 到计时器开始自动滚动的时间间隔 */
+- (CGFloat)mmSetDranggingStartScrollTimeInterval;
+/** 页码按钮是不是可以被点击 */
+- (BOOL)mmSetPageEnabled;
 
 @end
 @implementation MMBackScrollView
 
--(instancetype)initWithFrame:(CGRect)frame AndSuperView:(UIView *)superView Delegate:(id <MMBackScrollViewDelegate>)delegate{
+-(instancetype)initWithFrame:(CGRect)frame AndSuperView:(UIView *)superView Delegate:(UIViewController<MMBackScrollViewDelegate> *)delegate{
     self = [super initWithFrame:frame];
     if (self) {
         self.customDelegate = delegate;
@@ -69,8 +69,12 @@ typedef enum{
     self.pageControl = [[UIPageControl alloc]initWithFrame:self.mmPageFrame];
     self.pageControl.currentPageIndicatorTintColor = self.mmCurrentPageIndicatorTintColor;
     self.pageControl.pageIndicatorTintColor = self.mmPageIndicatorTintColor;
-    self.pageControl.enabled = NO;
+    self.pageControl.enabled = self.mmSetPageEnabled;
+    self.pageControl.hidesForSinglePage = YES;
     [superView addSubview:self.pageControl];
+    if (self.pageControl.enabled) {
+        [self.pageControl addTarget:self action:@selector(pageControlEnable:) forControlEvents:UIControlEventValueChanged];
+    }
 }
 
 #pragma mark -- 创建图片数组ImageView
@@ -95,17 +99,6 @@ typedef enum{
         }
     }
 }
-#pragma mark -- 添加手势
-/** 添加手势 */
-- (void)MMImageViewAddGesture:(UIView *)argumentView {
-    UITapGestureRecognizer * tapGesture = [[UITapGestureRecognizer alloc]initWithTarget:self action:@selector(mmTapGestureDidCliked:)];
-    [argumentView addGestureRecognizer:tapGesture];
-}
-#pragma mark -- 手势出现
-/** 手势出现 */
-- (void)mmTapGestureDidCliked:(UITapGestureRecognizer *)tapGesture {
-    [self.customDelegate scrollViewImageViewDidCliked:tapGesture.view.tag - TAG];
-}
 /** 添加图片到imageView上 */
 - (void)addImageToImageViewByArgument:(id)argument AndImageView:(UIImageView *)imageView PlaceholderImage:(UIImage *)placeholderImage{
     if ([argument isKindOfClass:[UIImage class]]) {
@@ -123,13 +116,37 @@ typedef enum{
     self.showsHorizontalScrollIndicator = NO;
     self.pagingEnabled = YES;
     self.delegate = self;
+    self.bounces = NO;
+}
+#pragma mark -- 添加手势
+/** 添加手势 */
+- (void)MMImageViewAddGesture:(UIView *)argumentView {
+    UITapGestureRecognizer * tapGesture = [[UITapGestureRecognizer alloc]initWithTarget:self action:@selector(mmTapGestureDidCliked:)];
+    [argumentView addGestureRecognizer:tapGesture];
+}
+#pragma mark -- 手势出现
+/** 手势出现 */
+- (void)mmTapGestureDidCliked:(UITapGestureRecognizer *)tapGesture {
+    if([self.customDelegate respondsToSelector:@selector(setMMBackScrollView:ImageViewDidCliked:)]){
+        [self.customDelegate  setMMBackScrollView:self ImageViewDidCliked:tapGesture.view.tag - TAG];
+    }
+}
+#pragma mark -- 页码被点击
+/** 页码被点击 */
+- (void)pageControlEnable:(UIPageControl *)pageControl {
+    dispatch_suspend(self.timer);
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.4 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        dispatch_resume(self.timer);
+    });
+    NSLog(@"%ld",pageControl.currentPage);
+    [self setContentOffset:CGPointMake(pageControl.currentPage * self.frame.size.width, 0) animated:YES];
 }
 #pragma mark -- 设置及时器
 /** 设置计时器 */
 - (void)mmSetTimer {
     __weak typeof(self)weakself = self;
     dispatch_source_t timer = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, dispatch_get_main_queue());
-    dispatch_source_set_timer(timer, DISPATCH_TIME_NOW, [self.customDelegate scrollToNextImageTimeInterval] * NSEC_PER_SEC, 0);
+    dispatch_source_set_timer(timer, DISPATCH_TIME_NOW, [self.customDelegate scrollToNextImageTimeInterval:self] * NSEC_PER_SEC, 0);
     dispatch_source_set_event_handler(timer, ^{
         [weakself useScrollViewContentOffsetScroll];
         if (false) {
@@ -152,48 +169,74 @@ typedef enum{
         if (num == self.pageControl.numberOfPages) {
             self.contentOffset = CGPointMake(self.frame.size.width, 0);
         }
-        NSLog(@"%lf",self.contentOffset.x);
+        self.pageControl.currentPage = self.contentOffset.x / self.frame.size.width - 1;
     }];
 }
 
 #pragma mark -- 获取用户指定的信息
 /** 设置page的frame */
 - (CGRect)mmPageFrame{
-    if ([self.customDelegate respondsToSelector:@selector(setMMBackScrollViewPageFrame)]) {
-        return [self.customDelegate setMMBackScrollViewPageFrame];
+    if ([self.customDelegate respondsToSelector:@selector(setMMBackScrollViewPageFrame:)]) {
+        return [self.customDelegate setMMBackScrollViewPageFrame:self];
     }
     return CGRectMake(0, self.frame.size.height - 20, self.frame.size.width, 15);
 }
 /** 设置选中的页码颜色 */
 - (UIColor *)mmCurrentPageIndicatorTintColor{
-    if ([self.customDelegate respondsToSelector:@selector(setMMBackScrollViewCurrentPageIndicatorTintColor)]) {
-        return [self.customDelegate setMMBackScrollViewCurrentPageIndicatorTintColor];
+    if ([self.customDelegate respondsToSelector:@selector(setMMBackScrollViewCurrentPageIndicatorTintColor:)]) {
+        return [self.customDelegate setMMBackScrollViewCurrentPageIndicatorTintColor:self];
     }
     return [UIColor blackColor];
 }
 /** 设置未选中的页码颜色 */
 - (UIColor *)mmPageIndicatorTintColor{
-    if ([self.customDelegate respondsToSelector:@selector(setMMBackScrollViewPageIndicatorTintColor)]) {
-        return [self.customDelegate setMMBackScrollViewPageIndicatorTintColor];
+    if ([self.customDelegate respondsToSelector:@selector(setMMBackScrollViewPageIndicatorTintColor:)]) {
+        return [self.customDelegate setMMBackScrollViewPageIndicatorTintColor:self];
     }
     return [UIColor whiteColor];
 }
 /** 设置默认页数 */
 - (NSInteger)mmSetCurrentPageNumber{
-    if ([self.customDelegate respondsToSelector:@selector(setMMBackScrollViewCurrentPageNumber)]) {
-        return [self.customDelegate setMMBackScrollViewCurrentPageNumber];
+    if ([self.customDelegate respondsToSelector:@selector(setMMBackScrollViewCurrentPageNumber:)]) {
+        return [self.customDelegate setMMBackScrollViewCurrentPageNumber:self];
     }
     return 0;
 }
+/** 用户拖拽事件 到计时器开始自动滚动的时间间隔 */
+- (CGFloat)mmSetDranggingStartScrollTimeInterval {
+    if([self.customDelegate respondsToSelector:@selector(setMMBackScrollViewDranggingStartScrollTimeInterval:)]){
+        return [self.customDelegate setMMBackScrollViewDranggingStartScrollTimeInterval:self];
+    }
+    return 2.0f;
+}
+/** 页码按钮是不是可以被点击 */
+- (BOOL)mmSetPageEnabled{
+    if ([self.customDelegate respondsToSelector:@selector(setPageControlEnableMMBackScrollView:)]) {
+        return [self.customDelegate setPageControlEnableMMBackScrollView:self];
+    }
+    return NO;
+}
 #pragma mark -- scrollDelegate
 -(void)scrollViewWillBeginDragging:(UIScrollView *)scrollView{
-    dispatch_source_set_timer(self.timer, DISPATCH_TIME_FOREVER, [self.customDelegate scrollToNextImageTimeInterval] * NSEC_PER_SEC, 0);
+    dispatch_source_set_timer(self.timer, DISPATCH_TIME_FOREVER, [self.customDelegate scrollToNextImageTimeInterval:self] * NSEC_PER_SEC, 0);
 
 }
 -(void)scrollViewDidEndDragging:(UIScrollView *)scrollView willDecelerate:(BOOL)decelerate{
-    dispatch_source_set_timer(self.timer, dispatch_walltime(DISPATCH_TIME_NOW, [self.customDelegate scrollToNextImageTimeInterval] * NSEC_PER_SEC), [self.customDelegate scrollToNextImageTimeInterval] * NSEC_PER_SEC, 0);
+    dispatch_source_set_timer(self.timer, dispatch_walltime(DISPATCH_TIME_NOW, self.mmSetDranggingStartScrollTimeInterval * NSEC_PER_SEC), [self.customDelegate scrollToNextImageTimeInterval:self] * NSEC_PER_SEC, 0);
 }
 - (void)scrollViewDidEndDecelerating:(UIScrollView *)scrollView{
-    
+    NSInteger num = self.contentOffset.x / self.frame.size.width;
+    if (num == 0) {
+        self.contentOffset = CGPointMake(self.contentSize.width - (2 * self.frame.size.width), 0);
+        self.pageControl.currentPage = self.contentOffset.x / self.frame.size.width - 1;
+        return;
+    }
+    if (num == self.pageControl.numberOfPages + 1) {
+        self.contentOffset = CGPointMake(self.frame.size.width, 0);
+        self.pageControl.currentPage = self.contentOffset.x / self.frame.size.width - 1;
+        return;
+    }
+    self.pageControl.currentPage = self.contentOffset.x / self.frame.size.width - 1;
 }
+
 @end
