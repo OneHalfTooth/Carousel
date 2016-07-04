@@ -15,12 +15,10 @@
 @class MMBackScrollView;
 @protocol MMBackScrollViewDelegate <NSObject>
 
-@required
-/** 设置滚动时间间隔 */
-- (CGFloat)scrollToNextImageTimeInterval:(MMBackScrollView *)backScrollView;
-
 
 @optional
+/** 设置滚动时间间隔 */
+- (CGFloat)scrollToNextImageTimeInterval:(MMBackScrollView *)backScrollView;
 
 /** 设置图片呗点击的代理 */
 - (void)setMMBackScrollView:(MMBackScrollView *)backScrollView ImageViewDidCliked:(NSInteger)imageIndex;

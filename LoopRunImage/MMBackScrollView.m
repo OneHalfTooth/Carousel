@@ -53,7 +53,7 @@
         [superView addSubview:self];
         [self mmCreatePageSuperView:superView];
         [self setUpScrollView];
-        if(self.customDelegate){
+        if(self.customDelegate && [self.customDelegate isKindOfClass:[UIViewController class]]){
             [self change:delegate];
         }
     }
@@ -195,7 +195,7 @@
     dispatch_source_set_cancel_handler(self.timer, ^{
 
     });
-    if (!self.customDelegate) {
+    if (!self.customDelegate || ![self.customDelegate isKindOfClass:[UIViewController class]]) {
         dispatch_resume(self.timer);
     }
 //    dispatch_resume(timer);
@@ -263,7 +263,7 @@
 }
 /**滚动到下一屏的时间*/
 - (NSTimeInterval)scrollNextTimer{
-    if (self.customDelegate) {
+    if (self.customDelegate && [self.customDelegate isKindOfClass:[UIViewController class]]) {
         return  [self.customDelegate scrollToNextImageTimeInterval:self];
     }
     return 0.5f;
