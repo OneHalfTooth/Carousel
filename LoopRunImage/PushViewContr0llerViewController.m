@@ -19,7 +19,7 @@
     self.automaticallyAdjustsScrollViewInsets = NO;
     self.view.backgroundColor = [UIColor redColor];
     // Do any additional setup after loading the view.
-    MMBackScrollView * scrollView = [[MMBackScrollView alloc]initWithFrame:CGRectMake(0, 0, self.view.frame.size.width, 300) AndSuperView:self.view Delegate:self];
+    MMBackScrollView * scrollView = [[MMBackScrollView alloc]initWithFrame:CGRectMake(0, 0, self.view.frame.size.width, 300) AndSuperView:self.view Delegate:nil];
     NSArray * arr = @[[UIImage imageNamed:@"1"],[UIImage imageNamed:@"2"],[UIImage imageNamed:@"3"],[UIImage imageNamed:@"1"],[UIImage imageNamed:@"2"]];
     [scrollView upDataScrollViewImageArray:arr PlaceholderImage:[UIImage imageNamed:@"msy"]];
 }
@@ -39,7 +39,7 @@
 
 #pragma mark -- MMBackScrollViewDelegate
 -(CGFloat)scrollToNextImageTimeInterval:(MMBackScrollView *)backScrollView{
-    return 1.f;
+    return 5.f;
 }
 
 /** 某张图片被点击的回调 */

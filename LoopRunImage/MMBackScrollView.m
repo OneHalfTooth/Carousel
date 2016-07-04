@@ -53,7 +53,9 @@
         [superView addSubview:self];
         [self mmCreatePageSuperView:superView];
         [self setUpScrollView];
-        [self change:delegate];
+        if(self.customDelegate){
+            [self change:delegate];
+        }
     }
     return self;
 }
@@ -182,19 +184,21 @@
 /** 设置计时器 */
 - (void)mmSetTimer {
     __weak typeof(self)weakself = self;
-    dispatch_source_t timer = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, dispatch_get_main_queue());
-    dispatch_source_set_timer(timer, DISPATCH_TIME_NOW, [self.customDelegate scrollToNextImageTimeInterval:self] * NSEC_PER_SEC, 0);
-    dispatch_source_set_event_handler(timer, ^{
+    self.timer = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, dispatch_get_main_queue());
+    dispatch_source_set_timer(self.timer, DISPATCH_TIME_NOW, [self scrollNextTimer] * NSEC_PER_SEC, 0);
+    dispatch_source_set_event_handler(self.timer, ^{
         [weakself useScrollViewContentOffsetScroll];
         if (false) {
-            dispatch_source_cancel(timer);/** 停止永远不会执行 */
+            dispatch_source_cancel(self.timer);/** 停止永远不会执行 */
         }
     });
-    dispatch_source_set_cancel_handler(timer, ^{
+    dispatch_source_set_cancel_handler(self.timer, ^{
 
     });
+    if (!self.customDelegate) {
+        dispatch_resume(self.timer);
+    }
 //    dispatch_resume(timer);
-    self.timer = timer;
 }
 #pragma mark -- 使用定时器让scrollView滚动
 /** 使用定时器让scrollView滚动 */
@@ -257,13 +261,20 @@
     }
     return 0.35f;
 }
+/**滚动到下一屏的时间*/
+- (NSTimeInterval)scrollNextTimer{
+    if (self.customDelegate) {
+        return  [self.customDelegate scrollToNextImageTimeInterval:self];
+    }
+    return 0.5f;
+}
 #pragma mark -- scrollDelegate
 -(void)scrollViewWillBeginDragging:(UIScrollView *)scrollView{
-    dispatch_source_set_timer(self.timer, DISPATCH_TIME_FOREVER, [self.customDelegate scrollToNextImageTimeInterval:self] * NSEC_PER_SEC, 0);
+    dispatch_source_set_timer(self.timer, DISPATCH_TIME_FOREVER, [self scrollNextTimer] * NSEC_PER_SEC, 0);
 
 }
 -(void)scrollViewDidEndDragging:(UIScrollView *)scrollView willDecelerate:(BOOL)decelerate{
-    dispatch_source_set_timer(self.timer, dispatch_walltime(DISPATCH_TIME_NOW, self.mmSetDranggingStartScrollTimeInterval * NSEC_PER_SEC), [self.customDelegate scrollToNextImageTimeInterval:self] * NSEC_PER_SEC, 0);
+    dispatch_source_set_timer(self.timer, dispatch_walltime(DISPATCH_TIME_NOW, self.mmSetDranggingStartScrollTimeInterval * NSEC_PER_SEC), [self scrollNextTimer] * NSEC_PER_SEC, 0);
 }
 - (void)scrollViewDidEndDecelerating:(UIScrollView *)scrollView{
     NSInteger num = self.contentOffset.x / self.frame.size.width;
