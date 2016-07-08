@@ -24,8 +24,12 @@
 @property (nonatomic,assign)CGFloat lastScroll;
 @property (nonatomic,assign)Class name;
 @property (nonatomic,assign)Class otherName;
+@property (nonatomic,weak)UIView * superView;
+@property (nonatomic,assign)BOOL isAdd;
 /** 是否挂起 */
 @property (nonatomic,assign)BOOL flag;
+/** 页数label  */
+@property (nonatomic,retain)UILabel * pageLabel;
 
 /** 返回page的frame */
 - (CGRect)mmPageFrame;
@@ -41,6 +45,8 @@
 - (BOOL)mmSetPageEnabled;
 /** 滚动动画的时间 */
 - (NSTimeInterval)mmSetAnimationTimeinterval;
+/**获取页码label的frame*/
+- (CGRect)mmGetPageLabelFrame;
 
 @end
 @implementation MMBackScrollView
@@ -48,14 +54,16 @@
 -(instancetype)initWithFrame:(CGRect)frame AndSuperView:(UIView *)superView Delegate:(UIViewController<MMBackScrollViewDelegate> *)delegate{
     self = [super initWithFrame:frame];
     if (self) {
+        self.isAdd = NO;
         self.customDelegate = delegate;
         self.name = [self.customDelegate class];
         [superView addSubview:self];
-        [self mmCreatePageSuperView:superView];
         [self setUpScrollView];
         if(self.customDelegate && [self.customDelegate isKindOfClass:[UIViewController class]]){
             [self change:delegate];
         }
+        self.superView = superView;
+        [self mmCreatePageSuperView];
     }
     return self;
 }
@@ -70,25 +78,41 @@
     [self createImageViewByImageArray:imageArray PlaceholderImage:placeholderImage];
     /** 计时器开始 */
     [self mmSetTimer];
-    
+}
+/** 创建页码label */
+- (void)createNumberLabel{
+    self.pageLabel = [[UILabel alloc]initWithFrame:self.mmGetPageLabelFrame];
+    self.pageLabel.backgroundColor = JKColor(220, 220, 220, 1);
+    self.pageLabel.layer.masksToBounds = YES;
+    self.pageLabel.textAlignment = NSTextAlignmentCenter;
+    self.pageLabel.font = [UIFont systemFontOfSize:15];
+    self.pageLabel.textColor = [UIColor whiteColor];
+    self.pageLabel.layer.cornerRadius = self.pageLabel.bounds.size.width / 2.0;
+    [self.superView addSubview:self.pageLabel];
+    [self.pageControl addObserver:self forKeyPath:@"currentPage" options:NSKeyValueObservingOptionNew context:nil];
 }
 #pragma mark -- 创建页码
 /** 创建页码 */
-- (void)mmCreatePageSuperView:(UIView *)superView{
+- (void)mmCreatePageSuperView{
     self.pageControl = [[UIPageControl alloc]initWithFrame:self.mmPageFrame];
     self.pageControl.currentPageIndicatorTintColor = self.mmCurrentPageIndicatorTintColor;
     self.pageControl.pageIndicatorTintColor = self.mmPageIndicatorTintColor;
     self.pageControl.enabled = self.mmSetPageEnabled;
     self.pageControl.hidesForSinglePage = YES;
-    [superView addSubview:self.pageControl];
     if (self.pageControl.enabled) {
         [self.pageControl addTarget:self action:@selector(pageControlEnable:) forControlEvents:UIControlEventValueChanged];
     }
+//    [superView addSubview:self.pageControl];
 }
 
 #pragma mark -- 创建图片数组ImageView
 /** 创建图片数组ImageView */
 - (void)createImageViewByImageArray:(NSArray *)imageArray PlaceholderImage:(UIImage *)placeholderImage{
+    for (UIView * obj in self.subviews) {
+        if ([obj isKindOfClass:[UIImageView class]]) {
+            [obj removeFromSuperview];
+        }
+    }
     NSMutableArray * dataSource = [[NSMutableArray alloc]initWithArray:imageArray];
     [dataSource insertObject:[imageArray lastObject] atIndex:0];
     [dataSource addObject:[imageArray firstObject]];
@@ -106,6 +130,10 @@
         }else{
             imageView.tag = i - 1 + TAG;
         }
+    }
+    if (!self.isAdd) {
+        self.isAdd = YES;
+         [self.superView addSubview:self.pageControl];
     }
 }
 /** 添加图片到imageView上 */
@@ -257,16 +285,23 @@
 /** 滚动动画的时间 */
 - (NSTimeInterval)mmSetAnimationTimeinterval{
     if ([self.customDelegate respondsToSelector:@selector(setMMBackScrollViewAnimationTimeIntervalBackScrollView:)]) {
-        [self.customDelegate setMMBackScrollViewAnimationTimeIntervalBackScrollView:self];
+        return  [self.customDelegate setMMBackScrollViewAnimationTimeIntervalBackScrollView:self];
     }
     return 0.35f;
 }
 /**滚动到下一屏的时间*/
 - (NSTimeInterval)scrollNextTimer{
-    if (self.customDelegate && [self.customDelegate isKindOfClass:[UIViewController class]]) {
+    if (self.customDelegate && [self.customDelegate respondsToSelector:@selector(scrollToNextImageTimeInterval:)]) {
         return  [self.customDelegate scrollToNextImageTimeInterval:self];
     }
-    return 0.5f;
+    return 1.f;
+}
+/** 获取页码的label的frame*/
+- (CGRect)mmGetPageLabelFrame{
+    if (self.customDelegate && [self.customDelegate respondsToSelector:@selector(setMMBackScrollViewPageLabelFrame:)]) {
+        return [self.customDelegate setMMBackScrollViewPageLabelFrame:self];
+    }
+    return CGRectMake(self.bounds.size.width - 60, self.bounds.size.height - 60, 40, 40);
 }
 #pragma mark -- scrollDelegate
 -(void)scrollViewWillBeginDragging:(UIScrollView *)scrollView{
@@ -306,5 +341,11 @@ void customViewWillAppear(id obj ,SEL method,bool animation){
 }
 void customViewDidDisappear(id obj ,SEL method,bool animation){
       [[NSNotificationCenter defaultCenter]postNotificationName:@"MmDisAppear" object:@(animation)];
+}
+-(void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary<NSString *,id> *)change context:(void *)context{
+    self.pageLabel.text = [NSString stringWithFormat:@"%ld/%ld",self.pageControl.currentPage,self.pageControl.numberOfPages];
+}
+-(void)dealloc{
+    [self.pageLabel removeObserver:self forKeyPath:@"currentPage"];
 }
 @end
